@@ -5,6 +5,7 @@
 #include <termios.h>
 
 #define BAUDRATE B115200
+/* #define BAUDRATE B38400 */
 
 static void serial_setup_tio(int fd)
 {
