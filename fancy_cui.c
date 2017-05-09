@@ -107,11 +107,14 @@ static void main_loop(int fd)
 
 				get_sec = d_tv.tv_sec - s_tv.tv_sec;
 				if(d_tv.tv_usec > s_tv.tv_usec)
-					get_usec = d_tv.tv_usec - s_tv.tv_usec;
+					get_usec = get_sec*1000000 + d_tv.tv_usec - s_tv.tv_usec;
 				else
-					get_usec = d_tv.tv_sec*1000000 + d_tv.tv_usec - s_tv.tv_usec;
+					get_usec = get_sec*1000000 + d_tv.tv_usec - s_tv.tv_usec;
 
-				get_delta[get_ff_count] = get_sec*1000000 + get_usec;
+				get_delta[get_ff_count] = get_usec;
+				/* printf("0x%02x\n",c); */
+				/* gettimeofday(&m_tv,NULL);                                                    */
+				/* printf("[%d.%d] [%02d] 0x%02x \n", m_tv.tv_sec,m_tv.tv_usec,get_ff_count,c); */
 			}
 			if(c != 0xFF )
 #endif
