@@ -109,7 +109,7 @@ static void main_loop(int fd)
 				if(d_tv.tv_usec > s_tv.tv_usec)
 					get_usec = d_tv.tv_usec - s_tv.tv_usec;
 				else
-					get_usec = d_tv.tv_usec*1000000 - s_tv.tv_usec;
+					get_usec = d_tv.tv_sec*1000000 + d_tv.tv_usec - s_tv.tv_usec;
 
 				get_delta[get_ff_count] = get_sec*1000000 + get_usec;
 			}
