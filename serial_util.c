@@ -4,14 +4,34 @@
 #include <fcntl.h>
 #include <termios.h>
 
+
+#undef EVEN_PARITY
+#define EVEN_PARITY
+
 #define BAUDRATE B115200
 /* #define BAUDRATE B38400 */
+
+
 
 static void serial_setup_tio(int fd)
 {
 	struct termios newtio;
 
 	newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
+
+#ifdef EVEN_PARITY
+	//Even parity
+	newtio.c_cflag &= ~PARENB; /*  Clear parity enable */
+	newtio.c_iflag &= ~INPCK; /*  Enable parity checking */
+	newtio.c_iflag |= INPCK; /*  Disnable parity checking */
+
+	newtio.c_cflag |= PARENB; /*  Enable parity */
+	newtio.c_cflag &= ~PARODD; /*  偶效验 */
+	/* newtio.c_iflag |= (INPCK|ISTRIP); */
+	/* newtio.c_cflag |= PARENB;         */
+	/* newtio.c_cflag &= ~PARODD;        */
+#endif
+
 	newtio.c_iflag = 0;
 	newtio.c_oflag = 0;
 	newtio.c_lflag = 0;

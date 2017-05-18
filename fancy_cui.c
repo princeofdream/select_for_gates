@@ -1,17 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <memory.h>
-#include <termios.h>
-#include "serial_util.h"
-#include <sys/time.h>
-#include <pthread.h>
+
+#include "fancy_cui.h"
 
 #undef DEBUG_JCG
 /* #define DEBUG_JCG */
-
-#define DEBUG_FF_ERR
+/* #define DEBUG_FF_ERR */
 
 
 #ifdef DEBUG_JCG
@@ -24,9 +16,10 @@ struct timeval s_tv,d_tv,m_tv;
 int get_sec = 0;
 int get_usec = 0;
 int get_delta[128];
-int get_ff_count = 0;
+unsigned long get_ff_count = 0;
 unsigned char get_c=0;
 pthread_t m_pid;
+
 
 void* pthread_print_data(void* data)
 {
@@ -38,7 +31,11 @@ void* pthread_print_data(void* data)
 		if(get_delta[i1] == 0)
 			break;
 		if(get_delta[i1+1] == 0)
-			printf("delta[%d]: %d.\n",i1,get_delta[i1]);
+		{
+			memset(lstr,0x0,sizeof(lstr));
+			sprintf(lstr,"delta[%d]: %d.\n",i1,get_delta[i1]);
+			logd(lstr);
+		}
 		i1++;
 	}
 	memset(get_delta,0x0,sizeof(get_delta));
@@ -81,7 +78,9 @@ static void main_loop(int fd)
 				perror("read");
 				break;
 			}
-			printf("got data on stdin: %c\n", c);
+			memset(lstr,0x0,sizeof(lstr));
+			sprintf(lstr,"got data on stdin: %c\n", c);
+			logd(lstr);
 
 			if (c == 'q')
 				break;
@@ -112,27 +111,48 @@ static void main_loop(int fd)
 					get_usec = get_sec*1000000 + d_tv.tv_usec - s_tv.tv_usec;
 
 				get_delta[get_ff_count] = get_usec;
-				/* printf("0x%02x\n",c); */
+				/* memset(lstr,0x0,sizeof(lstr)); */
+				/* sprintf(lstr,"0x%02x\n",c); */
+				/* logd(lstr); */
 				/* gettimeofday(&m_tv,NULL);                                                    */
-				/* printf("[%d.%d] [%02d] 0x%02x \n", m_tv.tv_sec,m_tv.tv_usec,get_ff_count,c); */
+				/* memset(lstr,0x0,sizeof(lstr)); */
+				/* sprintf(lstr,"[%d.%d] [%02d] 0x%02x \n", m_tv.tv_sec,m_tv.tv_usec,get_ff_count,c); */
+				/* logd(lstr); */
 			}
 			if(c != 0xFF )
 #endif
 			{
 				gettimeofday(&m_tv,NULL);
-				printf("[%d.%d] [%02d] 0x%02x \n", m_tv.tv_sec,m_tv.tv_usec,get_ff_count,c);
+				memset(lstr,0x0,sizeof(lstr));
+				/* sprintf(lstr,"[%d.%06d] [%02d] 0x%02x \n", m_tv.tv_sec,m_tv.tv_usec,get_ff_count,c); */
+				if(get_ff_count %8 ==7)
+				{
+					if(get_ff_count %16 == 15)
+						sprintf(lstr,"0x%02x\n", c);
+					else
+						sprintf(lstr,"0x%02x \t", c);
+				}
+				else
+					sprintf(lstr,"0x%02x ", c);
+				logd(lstr);
 			}
 
 #if 0
 			if( get_ff_count%8 == 7 )
 			{
-				printf("----------\n");
+				memset(lstr,0x0,sizeof(lstr));
+				sprintf(lstr,"----------\n");
+				logd(lstr);
 				if( get_ff_count%16 == 15 )
-					printf("==========\n");
+				{
+					memset(lstr,0x0,sizeof(lstr));
+					sprintf(lstr,"==========\n");
+					logd(lstr);
+				}
 			}
 #endif
 			get_ff_count++;
-			if( get_ff_count > 4096)
+			if( get_ff_count >= 1000000000 )
 				get_ff_count = 0;
 
 		}
@@ -180,7 +200,9 @@ static void main_loop_auto(int fd)
 			/* }                                  */
 			if(c > 0x70)
 				c=0x61;
-			printf("got data on stdin: %c\n", c);
+			memset(lstr,0x0,sizeof(lstr));
+			sprintf(lstr,"got data on stdin: %c\n", c);
+			logd(lstr);
 			if (c == 'q')
 				break;
 			JCG();
@@ -195,7 +217,9 @@ static void main_loop_auto(int fd)
 		/*         perror("read");                                */
 		/*         break;                                         */
 		/*     }                                                  */
-		/*     printf("\t\t\t\tgot data on serial: 0x%02x\n", c); */
+			/* memset(lstr,0x0,sizeof(lstr)); */
+		/*     sprintf(lstr,"\t\t\t\tgot data on serial: 0x%02x\n", c); */
+			/* logd(lstr); */
 		/* }                                                      */
 	}
 
@@ -223,11 +247,17 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	JCG();
+	init_log_util(NULL);
+#ifdef USE_UART_EMU
+	init_uart_emu_fifo_util();
+	close(fd);
+	fd=open(UART_EMU_FIFO,O_RDWR);
+#endif
+
 	main_loop(fd);
 	/* main_loop_auto(fd); */
-	JCG();
 
 	serial_close(fd, &oldtio);
+	exit_log_util();
 	return 0;
 }
