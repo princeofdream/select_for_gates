@@ -16,6 +16,9 @@
  * =====================================================================================
  */
 
+#ifndef __FANCY_CUI_HEADER__
+#define __FANCY_CUI_HEADER__
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -29,4 +32,6 @@
 #include "log_util.h"
 #include "fifo_util.h"
 
+int	fancy_cui_main(char* dev_path, int rate);
 
+#endif /* ifndef __FANCY_CUI_HEADER__ */

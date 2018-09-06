@@ -65,7 +65,6 @@ static void main_loop(int fd)
 
 		JCG();
 		sel_result = select(FD_SETSIZE, &rfds, NULL, NULL, NULL);
-		JCG();
 		if (sel_result < 0) {
 			perror("select");
 			break;
@@ -134,23 +133,10 @@ static void main_loop(int fd)
 				}
 				else
 					sprintf(lstr,"0x%02x ", c);
+				// print stdout data
 				logd(lstr);
 			}
 
-#if 0
-			if( get_ff_count%8 == 7 )
-			{
-				memset(lstr,0x0,sizeof(lstr));
-				sprintf(lstr,"----------\n");
-				logd(lstr);
-				if( get_ff_count%16 == 15 )
-				{
-					memset(lstr,0x0,sizeof(lstr));
-					sprintf(lstr,"==========\n");
-					logd(lstr);
-				}
-			}
-#endif
 			get_ff_count++;
 			if( get_ff_count >= 1000000000 )
 				get_ff_count = 0;
@@ -226,28 +212,44 @@ static void main_loop_auto(int fd)
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldstdtio);
 }
 
+#ifndef BUILD_FOR_LIBRARY
 int main(int argc, char **argv)
+{
+	char *devname;
+	int baudrate = 0;
+
+	if (argc >= 2) {
+		devname = argv[1];
+	} else {
+		printf("usage: %s <serial device> [115200|9600...]\n", argv[0]);
+		return 1;
+	}
+	if (argc >= 3) {
+		baudrate = atoi(argv[2]);
+	}
+	fancy_cui_main(devname, baudrate);
+	return 0;
+}
+#endif
+
+int	fancy_cui_main(char* dev_path, int rate)
 {
 	int fd;
 	struct termios oldtio;
-	char *devname;
+	int baudrate = rate;
 
 	memset(get_delta,0x0,sizeof(get_delta));
 	get_ff_count = 0;
 
-	if (argc == 2) {
-		devname = argv[1];
-	} else {
-		printf("usage: %s <serial device>\n", argv[0]);
-		return 1;
-	}
-
-	if ((fd = serial_open(devname, &oldtio)) < 0) {
-		perror(devname);
+	serial_set_baudrate(baudrate);
+	if ((fd = serial_open(dev_path, &oldtio)) < 0) {
+		perror(dev_path);
 		return 1;
 	}
 
 	init_log_util(NULL);
+	set_log_to_file(0);
+
 #ifdef USE_UART_EMU
 	init_uart_emu_fifo_util();
 	close(fd);

@@ -21,6 +21,8 @@
 static int fd = -1;
 char log_path[4096];
 
+static int log_to_file = 0;
+
 char* get_log_path()
 {
 }
@@ -39,6 +41,10 @@ int init_log_util(char* path)
 	memset(lstr,0x0,sizeof(lstr));
 	time(&m_time);
 	m_tm = localtime(&m_time);
+
+	if (log_to_file <= 0) {
+		return 0;
+	}
 
 	if(path == NULL)
 	{
@@ -74,7 +80,7 @@ int exit_log_util()
 
 void logd(char* log_str)
 {
-	if(fd < 0)
+	if(log_to_file > 0 && fd < 0)
 	{
 		init_log_util(NULL);
 	}
@@ -82,8 +88,14 @@ void logd(char* log_str)
 	printf("%s",log_str);
 	//force output
 	fflush(stdout);
-	write(fd,log_str,strlen(log_str));
+	if (log_to_file > 0) {
+		write(fd,log_str,strlen(log_str));
+	}
 }
 
+void set_log_to_file(int mode)
+{
+	log_to_file = mode;
+}
 
 

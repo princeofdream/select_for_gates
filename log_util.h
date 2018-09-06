@@ -33,6 +33,7 @@ char* get_log_path();
 void set_log_path(char* path);
 int exit_log_util();
 int init_log_util(char* path);
+void set_log_to_file(int mode);
 
 
 void logd(char* log_str);

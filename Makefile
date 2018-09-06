@@ -1,6 +1,7 @@
 BIN	:= fancy_cui
 OBJS	:= fancy_cui.o serial_util.o log_util.o fifo_util.o
-CFLAGS	:= -O2 -Wall -Wextra -static -lpthread
+CFLAGS	:= -O2 -Wall -Wextra -lpthread -fPIC
+# CFLAGS  += -static
 # CC	:= gcc
 # CC	:= arm-linux-gnueabihf-gcc -static
 # CC	:= arm-fsl-linux-gnueabi-gcc -static
@@ -8,20 +9,28 @@ CFLAGS	:= -O2 -Wall -Wextra -static -lpthread
 
 LDFLAGS= -pthread -lpthread
 
-all: $(BIN)
+LIBRARY_CFLAGS  := $(CFLAGS)
+LIBRARY_CFLAGS  += -DBUILD_FOR_LIBRARY -fPIC
+LIBRARY_LDFLAGS := $(LDFLAGS)
+LIBRARY_LDFLAGS += -shared
+
+
+.PHONY: clean
+
+all: $(BIN) libfancycui
 
 clean:
-	- rm $(BIN) *.o
+	- rm $(BIN) *.so *.o a.out
 
 fancy_cui: $(OBJS)
+	set -e;for i in $(OBJS); do $(CC) $(CFLAGS) -c $(LDFLAGS) $$i;done
+	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS)  -o $(@)
 
-fancy_cui.o: \
-	fancy_cui.c serial_util.h
-serial_util.o: \
-	serial_util.c
-log_util.o: \
-	log_util.c
+libfancycui: $(OBJS)
+	set -e;for i in $(OBJS); do $(CC) $(LIBRARY_CFLAGS) -c $(LIBRARY_LDFLAGS) $$i;done
+	$(CC) $(LIBRARY_CFLAGS) $(LIBRARY_LDFLAGS) $(OBJS) -o $(@).so
 
-fifo_util.o : \
-	fifo_util.c
+test: test.c libfancycui
+	$(CC) test.c -lfancycui -o a.out -L. -Wl,-rpath=.
+
 
