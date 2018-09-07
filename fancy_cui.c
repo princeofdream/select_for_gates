@@ -217,22 +217,42 @@ int main(int argc, char **argv)
 {
 	char *devname;
 	int baudrate = 0;
+	int emu=0;
+	int i0 = 0;
 
 	if (argc >= 2) {
-		devname = argv[1];
 	} else {
 		printf("usage: %s <serial device> [115200|9600...]\n", argv[0]);
 		return 1;
 	}
-	if (argc >= 3) {
-		baudrate = atoi(argv[2]);
+	while (i0 < argc) {
+		switch (i0) {
+			case 1:
+				devname = argv[i0];
+				break;
+			case 2:
+				baudrate = atoi(argv[i0]);
+				break;
+			case 3:
+				emu = atoi(argv[i0]);
+				break;
+			default:
+				break;
+		}
 	}
-	fancy_cui_main(devname, baudrate);
+	serial_terminal(devname, baudrate,0,0,emu);
 	return 0;
 }
 #endif
 
 int	fancy_cui_main(char* dev_path, int rate)
+{
+	int ret;
+	ret = serial_terminal(dev_path, rate, 0, 0, 0);
+	return ret;
+}
+
+int serial_terminal(char* dev_path, int rate, tcflag_t flag, int log_to_file, int emu_serial)
 {
 	int fd;
 	struct termios oldtio;
@@ -248,12 +268,14 @@ int	fancy_cui_main(char* dev_path, int rate)
 	}
 
 	init_log_util(NULL);
-	set_log_to_file(0);
+	set_log_to_file(log_to_file);
 
 #ifdef USE_UART_EMU
-	init_uart_emu_fifo_util();
-	close(fd);
-	fd=open(UART_EMU_FIFO,O_RDWR);
+	if (emu_serial) {
+		init_uart_emu_fifo_util();
+		close(fd);
+		fd=open(UART_EMU_FIFO,O_RDWR);
+	}
 #endif
 
 	main_loop(fd);

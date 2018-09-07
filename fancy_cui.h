@@ -33,5 +33,6 @@
 #include "fifo_util.h"
 
 int	fancy_cui_main(char* dev_path, int rate);
+int serial_terminal(char* dev_path, int rate, tcflag_t flag, int log_to_file, int emu_serial);
 
 #endif /* ifndef __FANCY_CUI_HEADER__ */

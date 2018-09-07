@@ -29,7 +29,8 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 	printf("-->%s<--\n",argv[1]);
-	fancy_cui_main(argv[1], 115200);
+	/* serial_terminal(argv[1], 115200, 0,0,0); */
+	serial_terminal(argv[1], 115200, 0,0,1);
 	return 0;
 }
 

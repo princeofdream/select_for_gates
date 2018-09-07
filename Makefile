@@ -19,9 +19,6 @@ LIBRARY_LDFLAGS += -shared
 
 all: $(BIN) libfancycui
 
-clean:
-	- rm $(BIN) *.so *.o a.out
-
 fancy_cui: $(OBJS)
 	set -e;for i in $(OBJS); do $(CC) $(CFLAGS) -c $(LDFLAGS) $$i;done
 	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS)  -o $(@)
@@ -31,6 +28,8 @@ libfancycui: $(OBJS)
 	$(CC) $(LIBRARY_CFLAGS) $(LIBRARY_LDFLAGS) $(OBJS) -o $(@).so
 
 test: test.c libfancycui
-	$(CC) test.c -lfancycui -o a.out -L. -Wl,-rpath=.
+	$(CC) $(CFLAGS) $(LDFLAGS) test.c -lfancycui -o test -L. -Wl,-rpath=.
 
+clean:
+	- rm $(BIN) *.so *.o a.out uart_emu_fifo
 
