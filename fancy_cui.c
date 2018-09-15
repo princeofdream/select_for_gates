@@ -222,7 +222,7 @@ int main(int argc, char **argv)
 
 	if (argc >= 2) {
 	} else {
-		printf("usage: %s <serial device> [115200|9600...]\n", argv[0]);
+		printf("usage: %s <serial device> [115200|9600...] [fifo_emu]\n", argv[0]);
 		return 1;
 	}
 	while (i0 < argc) {
@@ -239,6 +239,7 @@ int main(int argc, char **argv)
 			default:
 				break;
 		}
+		i0++;
 	}
 	serial_terminal(devname, baudrate,0,0,emu);
 	return 0;
