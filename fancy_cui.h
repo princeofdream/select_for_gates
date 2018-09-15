@@ -34,5 +34,7 @@
 
 int	fancy_cui_main(char* dev_path, int rate);
 int serial_terminal(char* dev_path, int rate, tcflag_t flag, int log_to_file, int emu_serial);
+void set_input_fd(int fd);
+void set_log_input(int mode);
 
 #endif /* ifndef __FANCY_CUI_HEADER__ */

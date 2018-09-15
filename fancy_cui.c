@@ -2,8 +2,7 @@
 #include "fancy_cui.h"
 
 #undef DEBUG_JCG
-/* #define DEBUG_JCG */
-/* #define DEBUG_FF_ERR */
+#define DEBUG_JCG
 
 
 #ifdef DEBUG_JCG
@@ -19,29 +18,8 @@ int get_delta[128];
 unsigned long get_ff_count = 0;
 unsigned char get_c=0;
 pthread_t m_pid;
-
-
-void* pthread_print_data(void* data)
-{
-#ifdef DEBUG_FF_ERR
-	int i1=0;
-	sleep(1);
-	while(i1 < 128)
-	{
-		if(get_delta[i1] == 0)
-			break;
-		if(get_delta[i1+1] == 0)
-		{
-			memset(lstr,0x0,sizeof(lstr));
-			sprintf(lstr,"delta[%d]: %d.\n",i1,get_delta[i1]);
-			logd(lstr);
-		}
-		i1++;
-	}
-	memset(get_delta,0x0,sizeof(get_delta));
-	get_ff_count=0;
-#endif
-}
+static int input_fd = STDIN_FILENO;
+static int log_input = 0;
 
 static void main_loop(int fd)
 {
@@ -50,41 +28,44 @@ static void main_loop(int fd)
 	unsigned char c;
 	ssize_t rsize;
 
-	tcgetattr(STDIN_FILENO, &oldstdtio);
+	tcgetattr(input_fd, &oldstdtio);
 	memcpy(&newstdtio, &oldstdtio, sizeof(struct termios));
 	newstdtio.c_lflag &= ~(ICANON | ECHO);
-	tcsetattr(STDIN_FILENO, TCSANOW, &newstdtio);
+	tcsetattr(input_fd, TCSANOW, &newstdtio);
 
 	FD_ZERO(&readfds);
-	FD_SET(STDIN_FILENO, &readfds);
+	FD_SET(input_fd, &readfds);
 	FD_SET(fd, &readfds);
 
 	for (;;) {
 		fd_set rfds = readfds;
 		int sel_result;
 
-		JCG();
 		sel_result = select(FD_SETSIZE, &rfds, NULL, NULL, NULL);
 		if (sel_result < 0) {
 			perror("select");
 			break;
 		} else if (sel_result == 0) {
 			/* timeout: no way */
-		} else if (FD_ISSET(STDIN_FILENO, &rfds)) {
+		} else if (FD_ISSET(input_fd, &rfds)) {
 			int i1=0;
-			rsize = read(STDIN_FILENO, &c, 1);
+			rsize = read(input_fd, &c, 1);
 			if (rsize < 0) {
 				perror("read");
 				break;
 			}
 			memset(lstr,0x0,sizeof(lstr));
-			sprintf(lstr,"got data on stdin: %c\n", c);
-			logd(lstr);
+			if (log_input > 0 && log_input <0xff) {
+				sprintf(lstr,"%c", c);
+				logd(lstr);
+			} else if (log_input >= 0xff) {
+				sprintf(lstr,"input: < %c >\nreturn:", c);
+				logd(lstr);
+			}
 
 			if (c == 'q')
 				break;
 			write(fd, &c, 1);
-			pthread_create(&m_pid, NULL, pthread_print_data, NULL);
 		} else if (FD_ISSET(fd, &rfds)) {
 			get_c=c;
 			rsize = read(fd, &c, 1);
@@ -94,48 +75,10 @@ static void main_loop(int fd)
 				break;
 			}
 
-#ifdef DEBUG_FF_ERR
-			if( c == 0xFF )
-			{
-				if(get_c != 0xFF)
-				{
-					gettimeofday(&s_tv,NULL);
-				}
-				gettimeofday(&d_tv,NULL);
-
-				get_sec = d_tv.tv_sec - s_tv.tv_sec;
-				if(d_tv.tv_usec > s_tv.tv_usec)
-					get_usec = get_sec*1000000 + d_tv.tv_usec - s_tv.tv_usec;
-				else
-					get_usec = get_sec*1000000 + d_tv.tv_usec - s_tv.tv_usec;
-
-				get_delta[get_ff_count] = get_usec;
-				/* memset(lstr,0x0,sizeof(lstr)); */
-				/* sprintf(lstr,"0x%02x\n",c); */
-				/* logd(lstr); */
-				/* gettimeofday(&m_tv,NULL);                                                    */
-				/* memset(lstr,0x0,sizeof(lstr)); */
-				/* sprintf(lstr,"[%d.%d] [%02d] 0x%02x \n", m_tv.tv_sec,m_tv.tv_usec,get_ff_count,c); */
-				/* logd(lstr); */
-			}
-			if(c != 0xFF )
-#endif
-			{
-				gettimeofday(&m_tv,NULL);
-				memset(lstr,0x0,sizeof(lstr));
-				/* sprintf(lstr,"[%d.%06d] [%02d] 0x%02x \n", m_tv.tv_sec,m_tv.tv_usec,get_ff_count,c); */
-				if(get_ff_count %8 ==7)
-				{
-					if(get_ff_count %16 == 15)
-						sprintf(lstr,"0x%02x\n", c);
-					else
-						sprintf(lstr,"0x%02x \t", c);
-				}
-				else
-					sprintf(lstr,"0x%02x ", c);
-				// print stdout data
-				logd(lstr);
-			}
+			/* gettimeofday(&m_tv,NULL); */
+			memset(lstr,0x0,sizeof(lstr));
+			sprintf(lstr,"%c", c);
+			logd(lstr);
 
 			get_ff_count++;
 			if( get_ff_count >= 1000000000 )
@@ -144,7 +87,7 @@ static void main_loop(int fd)
 		}
 	}
 
-	tcsetattr(STDIN_FILENO, TCSANOW, &oldstdtio);
+	tcsetattr(input_fd, TCSANOW, &oldstdtio);
 }
 
 static void main_loop_auto(int fd)
@@ -154,36 +97,20 @@ static void main_loop_auto(int fd)
 	unsigned char c;
 	ssize_t rsize;
 
-	tcgetattr(STDIN_FILENO, &oldstdtio);
+	tcgetattr(input_fd, &oldstdtio);
 	memcpy(&newstdtio, &oldstdtio, sizeof(struct termios));
 	newstdtio.c_lflag &= ~(ICANON | ECHO);
-	tcsetattr(STDIN_FILENO, TCSANOW, &newstdtio);
+	tcsetattr(input_fd, TCSANOW, &newstdtio);
 
 	FD_ZERO(&readfds);
-	FD_SET(STDIN_FILENO, &readfds);
+	FD_SET(input_fd, &readfds);
 	FD_SET(fd, &readfds);
 
 	for (;;) {
 		fd_set rfds = readfds;
 		int sel_result;
 
-		JCG();
-		/* sel_result = select(FD_SETSIZE, &rfds, NULL, NULL, NULL); */
-		/* JCG(); */
-		/* if (sel_result < 0) {                       */
-		/*     perror("select");                       */
-		/*     break;                                  */
-		/* } else if (sel_result == 0) {               */
-		/*     [> timeout: no way <]                   */
-		/* } else if (FD_ISSET(STDIN_FILENO, &rfds)) { */
-			JCG();
 			sleep(1);
-			/* rsize = read(STDIN_FILENO, &c, 1); */
-			/* JCG();                             */
-			/* if (rsize < 0) {                   */
-			/*     perror("read");                */
-			/*     break;                         */
-			/* }                                  */
 			if(c > 0x70)
 				c=0x61;
 			memset(lstr,0x0,sizeof(lstr));
@@ -191,38 +118,25 @@ static void main_loop_auto(int fd)
 			logd(lstr);
 			if (c == 'q')
 				break;
-			JCG();
 			write(fd, &c, 1);
-			JCG();
 			c++;
-		/* } else if (FD_ISSET(fd, &rfds)) {                      */
-		/*     JCG();                                             */
-		/*     rsize = read(fd, &c, 1);                           */
-		/*     JCG();                                             */
-		/*     if (rsize < 0) {                                   */
-		/*         perror("read");                                */
-		/*         break;                                         */
-		/*     }                                                  */
-			/* memset(lstr,0x0,sizeof(lstr)); */
-		/*     sprintf(lstr,"\t\t\t\tgot data on serial: 0x%02x\n", c); */
-			/* logd(lstr); */
-		/* }                                                      */
 	}
 
-	tcsetattr(STDIN_FILENO, TCSANOW, &oldstdtio);
+	tcsetattr(input_fd, TCSANOW, &oldstdtio);
 }
 
 #ifndef BUILD_FOR_LIBRARY
 int main(int argc, char **argv)
 {
 	char *devname;
-	int baudrate = 0;
-	int emu=0;
-	int i0 = 0;
+	int baudrate  = 0;
+	int emu       = 1;
+	int i0        = 0;
+	int log_input = 0x1FF;
 
 	if (argc >= 2) {
 	} else {
-		printf("usage: %s <serial device> [115200|9600...] [fifo_emu]\n", argv[0]);
+		printf("usage: %s <serial device> [115200|9600...]\n", argv[0]);
 		return 1;
 	}
 	while (i0 < argc) {
@@ -236,11 +150,15 @@ int main(int argc, char **argv)
 			case 3:
 				emu = atoi(argv[i0]);
 				break;
+			case 4:
+				log_input = atoi(argv[i0]);
+				break;
 			default:
 				break;
 		}
 		i0++;
 	}
+	set_log_input(log_input);
 	serial_terminal(devname, baudrate,0,0,emu);
 	return 0;
 }
@@ -286,3 +204,14 @@ int serial_terminal(char* dev_path, int rate, tcflag_t flag, int log_to_file, in
 	exit_log_util();
 	return 0;
 }
+
+void set_input_fd(int fd)
+{
+	input_fd = fd;
+}
+
+void set_log_input(int mode)
+{
+	log_input = mode;
+}
+
