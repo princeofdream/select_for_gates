@@ -29,7 +29,7 @@
 
 
 #define UART_EMU_FIFO "uart_emu_fifo"
-#define USE_UART_EMU
+// #define USE_UART_EMU
 
 
 void init_uart_emu_fifo_util();
