@@ -59,7 +59,7 @@ static void main_loop(int fd)
 				sprintf(lstr,"%c", c);
 				logd(lstr);
 			} else if (log_input >= 0xff) {
-				sprintf(lstr,"input: < %c >\nreturn:", c);
+				sprintf(lstr,"\ninput: < %c >, return:", c);
 				logd(lstr);
 			}
 
