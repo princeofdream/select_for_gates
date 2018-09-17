@@ -49,7 +49,7 @@ test: test.c libfancycui
 	$(CC) $(CFLAGS) $(LDFLAGS) test.c -lfancycui -o test -L. -Wl,-rpath=.
 
 clean:
-	@rm $(BIN) *.so *.o test uart_emu_fifo*
+	@rm -rf $(BIN) *.so *.o test uart_emu_fifo*
 
 distclean: clean
 	rm -rf test uart_emu_fifo*

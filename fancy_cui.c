@@ -191,6 +191,9 @@ int serial_terminal(char* dev_path, int rate, tcflag_t flag, int log_to_file, in
 
 #ifdef USE_UART_EMU
 	if (emu_serial) {
+		printf("!!!!!!!!!!!!!! Warning !!!!!!!!!!!!!\n");
+		printf("!!! Use FIFO emulate serial I/O! !!!\n");
+		printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 		init_uart_emu_fifo_util();
 		close(fd);
 		fd=open(UART_EMU_FIFO,O_RDWR);
@@ -202,6 +205,11 @@ int serial_terminal(char* dev_path, int rate, tcflag_t flag, int log_to_file, in
 
 	serial_close(fd, &oldtio);
 	exit_log_util();
+#ifdef USE_UART_EMU
+	if (emu_serial) {
+		unlink(UART_EMU_FIFO);
+	}
+#endif
 	return 0;
 }
 
