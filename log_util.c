@@ -21,6 +21,7 @@
 static int fd = -1;
 char log_path[4096];
 
+
 static int log_to_file = 0;
 
 char* get_log_path()
@@ -38,7 +39,6 @@ int init_log_util(char* path)
 	time_t m_time;
 
 	memset(log_path,0x0,sizeof(log_path));
-	memset(lstr,0x0,sizeof(lstr));
 	time(&m_time);
 	m_tm = localtime(&m_time);
 

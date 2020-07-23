@@ -17,6 +17,9 @@
  */
 
 
+#ifndef __LOG_UTIL_H__
+#define __LOG_UTIL_H__
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -38,7 +41,6 @@ void set_log_to_file(int mode);
 
 void logd(char* log_str);
 
-char lstr[4096];
-
+#endif  // ifndef __LOG_UTIL_H__
 
 

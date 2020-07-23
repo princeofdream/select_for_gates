@@ -20,6 +20,7 @@ unsigned char get_c=0;
 pthread_t m_pid;
 static int input_fd = STDIN_FILENO;
 static int log_input = 0;
+char lstr[4096];
 
 static void main_loop(int fd)
 {
